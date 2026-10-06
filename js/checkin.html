@@ -1,0 +1,63 @@
+<!DOCTYPE	html>
+<html	lang="pt-BR">
+<head>
+<meta	charset="UTF-8">
+<meta	name="viewport"	content="width=device-width,	initial-scale=1.0">
+<title>Tablet	do	Pátio	·	New-Bit</title>
+<link	rel="preconnect"	href="https://fonts.googleapis.com">
+<link	rel="preconnect"	href="https://fonts.gstatic.com"	crossorigin>
+<link	href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"	rel="stylesheet">
+<link	rel="stylesheet"	href="css/style.css">
+<link	rel="stylesheet"	href="css/dashboard.css">
+<style>
+		.checkin-wrap	{	max-width:	520px;	margin:	0	auto;	padding:	32px	16px	60px;	}
+		.checkin-title	{	text-align:center;	margin-bottom:	22px;	}
+		#qr-reader	{	border-radius:	14px;	overflow:	hidden;	border:	1px	solid	var(--line);	margin-bottom:	20px;	}
+		.checkin-feedback	{	padding:	14px	16px;	border-radius:	10px;	font-size:	14px;	font-weight:	600;	margin-bottom:	18px;	display:none;	}
+		.checkin-feedback.is-ok	{	display:block;	background:	rgba(72,187,120,0.12);	color:	#2f855a;	}
+		.checkin-feedback.is-err	{	display:block;	background:	rgba(229,62,62,0.12);	color:	#c53030;	}
+		.manual-row	{	display:flex;	gap:10px;	margin-top:	8px;	}
+		.manual-row	.field-input	{	flex:1;	}
+</style>
+</head>
+<body	class="app-body">
+		<div	class="shell	checkin-wrap">
+				<header	class="topbar"	style="margin-bottom:10px;">
+						<a	href="index.html"	class="topbar-brand">
+								<span	class="topbar-crest">NB</span>
+								<span>
+										<span	class="topbar-school">Colégio	Barbosa	Ferraz</span>
+										<span	class="topbar-name">New&#8209;Bit</span>
+								</span>
+						</a>
+				</header>
+				<div	class="checkin-title">
+						<span	class="page-eyebrow">Acolhimento</span>
+						<h1	class="page-title">Tablet	do	pátio	—	Check-in</h1>
+						<p	style="color:var(--muted);	font-size:13px;">Aponte	o	QR	Code	do	cartão	do	aluno	para	a	câmera.</p>
+				</div>
+				<div	id="checkinFeedback"	class="checkin-feedback"></div>
+				<div	id="qr-reader"></div>
+				<section	class="panel">
+						<div	class="panel-header">
+								<h2	class="panel-title">Sem	câmera?	Digite	o	código	do	cartão</h2>
+						</div>
+						<div	class="panel-body">
+								<div	class="manual-row">
+										<input	class="field-input"	type="text"	id="manualLogin"	placeholder="ex:	ana.silva">
+										<button	class="btn-primary"	id="manualBtn">Registrar</button>
+								</div>
+						</div>
+				</section>
+				<section	class="panel">
+						<div	class="panel-header">
+								<h2	class="panel-title">Últimas	presenças	registradas</h2>
+						</div>
+						<div	class="panel-body"	id="recentList"></div>
+				</section>
+		</div>
+<script	src="js/store.js"></script>
+<script	src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script	src="js/checkin.js"></script>
+</body>
+</html>
