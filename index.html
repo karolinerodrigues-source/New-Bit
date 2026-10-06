@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New-Bit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="splash-body">
+
+  <main class="stage">
+    <div class="frame">
+
+      <div class="crest-wrap" id="crestWrap">
+        <svg class="crest" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle class="crest-ring-outer" cx="110" cy="110" r="102"/>
+          <circle class="crest-ring-inner" cx="110" cy="110" r="88"/>
+
+          <!-- laurel left -->
+          <g class="laurel">
+            <path d="M70 150 C 55 140, 48 120, 52 98 C 56 78, 68 62, 82 52" />
+            <path d="M62 138 C 50 134, 44 128, 42 120" />
+            <path d="M56 118 C 45 116, 38 111, 35 104" />
+            <path d="M55 96 C 44 96, 37 92, 33 85" />
+            <path d="M60 76 C 50 78, 42 76, 37 70" />
+            <path d="M70 58 C 62 62, 54 62, 48 58" />
+          </g>
+          <!-- laurel right (mirrored) -->
+          <g class="laurel" transform="translate(220,0) scale(-1,1)">
+            <path d="M70 150 C 55 140, 48 120, 52 98 C 56 78, 68 62, 82 52" />
+            <path d="M62 138 C 50 134, 44 128, 42 120" />
+            <path d="M56 118 C 45 116, 38 111, 35 104" />
+            <path d="M55 96 C 44 96, 37 92, 33 85" />
+            <path d="M60 76 C 50 78, 42 76, 37 70" />
+            <path d="M70 58 C 62 62, 54 62, 48 58" />
+          </g>
+
+          <text x="110" y="128" text-anchor="middle" class="crest-monogram">NB</text>
+          <path id="motto-arc" d="M 40 148 A 82 82 0 0 0 180 148" fill="none"/>
+          <text class="crest-motto">
+            <textPath href="#motto-arc" startOffset="50%" text-anchor="middle">COLÉGIO BARBOSA FERRAZ</textPath>
+          </text>
+        </svg>
+      </div>
+
+      <p class="eyebrow">bem-vindo ao</p>
+      <h1 class="wordmark">New&#8209;Bit</h1>
+      <p class="tagline">sua presença vale moeda</p>
+
+      <button class="btn-primary" id="enterBtn">Entrar</button>
+
+      <nav class="dock" aria-label="Atalhos">
+        <button class="dock-item" data-target="carteira" disabled>
+          <svg viewBox="0 0 24 24" class="dock-icon"><path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1h-9a3 3 0 0 0-3 3v4a3 3 0 0 0 3 3h9v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M14 10h5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2z"/><circle cx="16.5" cy="14" r="1"/></svg>
+          <span>Carteira</span>
+        </button>
+        <button class="dock-item" data-target="loja" disabled>
+          <svg viewBox="0 0 24 24" class="dock-icon"><path d="M4 8l1.5-4h13L20 8"/><path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8z"/><path d="M9 12a3 3 0 0 0 6 0"/></svg>
+          <span>Loja</span>
+        </button>
+        <button class="dock-item" data-target="carrinho" disabled>
+          <svg viewBox="0 0 24 24" class="dock-icon"><circle cx="9" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L21 7H6"/></svg>
+          <span>Carrinho</span>
+        </button>
+      </nav>
+      <p class="dock-hint">faça login para acessar sua carteira</p>
+
+    </div>
+  </main>
+
+<script src="js/app.js"></script>
+</body>
+</html>

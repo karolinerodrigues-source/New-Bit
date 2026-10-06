@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Professor · New-Bit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="app-body">
+
+  <div class="shell">
+
+    <header class="topbar">
+      <a href="index.html" class="topbar-brand">
+        <span class="topbar-crest">NB</span>
+        <span>
+          <span class="topbar-school">Colégio Barbosa Ferraz</span>
+          <span class="topbar-name">New&#8209;Bit</span>
+        </span>
+      </a>
+
+      <nav class="topbar-nav">
+        <a href="#" class="is-active">Painel</a>
+        <a href="#">Histórico</a>
+      </nav>
+
+      <div class="topbar-user">
+        <div class="user-chip">
+          <span class="avatar" id="avatarInitials">BS</span>
+          <span class="user-meta">
+            <span class="u-name" id="teacherName">Bruno Souza</span>
+            <span class="u-role">Professor</span>
+          </span>
+        </div>
+        <a href="login.html" class="icon-btn" aria-label="Sair" title="Sair">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </a>
+      </div>
+    </header>
+
+    <div class="page-head">
+      <div>
+        <span class="page-eyebrow">Perfil do Professor</span>
+        <h1 class="page-title">Painel do Professor</h1>
+      </div>
+
+      <label class="field" style="min-width:180px;">
+        <span class="field-label">Minhas turmas</span>
+        <select class="field-input" id="turmaSelect"></select>
+      </label>
+    </div>
+
+    <section class="panel" id="alunos-section">
+      <div class="panel-header">
+        <h2 class="panel-title">Alunos</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input class="search-input" id="searchAlunos" type="text" placeholder="Buscar aluno...">
+          <button class="btn-gold-outline" id="addAlunoBtn">+ Novo aluno</button>
+        </div>
+      </div>
+      <div class="panel-body" id="alunosList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Atividade recente</h2>
+      </div>
+      <div

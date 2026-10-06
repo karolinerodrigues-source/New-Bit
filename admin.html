@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Administrador · New-Bit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="app-body">
+
+  <div class="shell">
+
+    <header class="topbar">
+      <a href="index.html" class="topbar-brand">
+        <span class="topbar-crest">NB</span>
+        <span>
+          <span class="topbar-school">Colégio Barbosa Ferraz</span>
+          <span class="topbar-name">New&#8209;Bit</span>
+        </span>
+      </a>
+
+      <nav class="topbar-nav">
+        <a href="#" class="is-active">Painel</a>
+      </nav>
+
+      <div class="topbar-user">
+        <div class="user-chip">
+          <span class="avatar">AD</span>
+          <span class="user-meta">
+            <span class="u-name">Administrador</span>
+            <span class="u-role">Gestão escolar</span>
+          </span>
+        </div>
+        <a href="login.html" class="icon-btn" aria-label="Sair" title="Sair">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </a>
+      </div>
+    </header>
+
+    <div class="page-head">
+      <div>
+        <span class="page-eyebrow">Perfil de Administrador</span>
+        <h1 class="page-title">Painel de Administração</h1>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+        <div class="stat-value" id="statProfessores">0</div>
+        <div class="stat-label">Professores</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <div class="stat-value" id="statAlunos">0</div>
+        <div class="stat-label">Alunos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M4 8l1.5-4h13L20 8"/><path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8z"/></svg></div>
+        <div class="stat-value" id="statProdutos">0</div>
+        <div class="stat-label">Produtos na loja</div>
+      </div>
+    </div>
+
+    <div class="role-tabs" role="tablist" aria-label="Seções do administrador" style="max-width:360px; margin-bottom:22px;">
+      <button class="role-tab is-active" role="tab" data-tab="professores">Professores</button>
+      <button class="role-tab" role="tab" data-tab="alunos">Alunos</button>
+      <button class="role-tab" role="tab" data-tab="produtos">Produtos</button>
+    </div>
+
+    <!-- Professores -->
+    <section class="panel admin-tab" data-tab-panel="professores">
+      <div class="panel-header">
+        <h2 class="panel-title">Professores</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input class="search-input" id="searchProfessores" type="text" placeholder="Buscar professor...">
+          <button class="btn-gold-outline" id="addProfessorBtn">+ Novo professor</button>
+        </div>
+      </div>
+      <div class="panel-body" id="professoresList"></div>
+    </section>
+
+    <!-- Alunos -->
+    <section class="panel admin-tab" data-tab-panel="alunos" style="display:none;">
+      <div class="panel-header">
+        <h2 class="panel-title">Alunos</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input class="search-input" id="searchAlunosAdmin" type="text" placeholder="Buscar aluno...">
+          <button class="btn-gold-outline" id="addAlunoBtn">+ Novo aluno</button>
+        </div>
+      </div>
+      <div class="panel-body" id="alunosAdminList"></div>
+    </section>
+
+    <!-- Produtos -->
+    <section class="panel admin-tab" data-tab-panel="produtos" style="display:none;">
+      <div class="panel-header">
+        <h2 class="panel-title">Produtos da loja</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input class="search-input" id="searchProdutos" type="text" placeholder="Buscar produto...">
+          <button class="btn-gold-outline" id="addProdutoBtn">+ Novo produto</button>
+        </div>
+      </div>
+      <div class="panel-body" id="produtosList"></div>
+    </section>
+
+  </div>
+
+  <!-- Modal genérico: formulários e tela de credenciais -->
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal modal-wide" id="adminModalContent"></div>
+  </div>
+
+<script src="js/app.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
