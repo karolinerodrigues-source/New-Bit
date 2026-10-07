@@ -380,3 +380,18 @@ button, input {
   .frame { padding: 30px 20px 26px; border-radius: 20px; }
   .dock { gap: 24px; }
 }
+.crest-wrap {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crest-logo {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  display: block;
+}
