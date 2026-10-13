@@ -150,6 +150,31 @@ const	NewBitStore	=	(()	=>	{
 		function	getProfessor(professorId)	{
 				return	loadState().professores.find(p	=>	p.id	===	Number(professorId))	||	null;
 		}
+	function excluirProfessor(professorId) {
+  const state = loadState();
+  const id = Number(professorId);
+
+  if (!state.professores.some(p => p.id === id)) {
+    return false;
+  }
+
+  state.professores = state.professores.filter(p => p.id !== id);
+  saveState(state);
+  return true;
+}
+
+function excluirAluno(alunoId) {
+  const state = loadState();
+  const id = Number(alunoId);
+
+  if (!state.alunos.some(a => a.id === id)) {
+    return false;
+  }
+
+  state.alunos = state.alunos.filter(a => a.id !== id);
+  saveState(state);
+  return true;
+}
 		function	addProduto({	nome,	preco	})	{
 				const	state	=	loadState();
 				const	novo	=	{	id:	state.nextIds.produto++,	nome,	preco:	Number(preco)	};
@@ -240,13 +265,13 @@ Date().toISOString()	};
 				getState,	saveState,	resetState,
 				setSession,	getSession,	clearSession,
 				authenticate,
-				addAluno,	getAluno,	getAlunosDaTurma,
-				addProfessor,	getProfessor,
+				addAluno,	getAluno,	getAlunosDaTurma, excluirAluno,
+				addProfessor,	getProfessor, excluirProfessor,
 				addProduto,
 				getExtrato,	getSaldo,	getRanking,
 				registrarPresenca,
 				limiteInfo,	darPontos,
 				resgatarProduto,
-				addFeedback
+				addFeedback       
 		};
 })();
