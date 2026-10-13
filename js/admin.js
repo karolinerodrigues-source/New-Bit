@@ -107,9 +107,8 @@ document.addEventListener('DOMContentLoaded',	()	=>	{
 								<div	class="credential-row"><span	class="credential-label">Senha</span><span	class="credential-value">${senha}</span></div>
 								${extra	?	`<div	class="credential-row"><span	class="credential-label">Turma(s)</span><span	class="credential-value">${extra}</span></div>`	:	''}
 						</div>
-						${mostrarQr	?	qrImg(login)	+	'<p	style="text-align:center;color:var(--muted);font-size:11.5px;">Este	QR	Code	é	o	cartão	do	aluno	—	use-o	no	tablet	do	pátio	(checkin.html).
-</p>'	:	''}
-						<div	class="modal-actions">
+${mostrarQr ? qrImg(login) + '<p style="text-align:center;color:var(--muted);font-size:11.5px;">Este QR Code é o cartão do aluno — use-o no tablet do pátio (checkin.html).</p>' : ''}						
+                        <div	class="modal-actions">
 								<button	type="button"	class="modal-cancel"	id="credCopy">Copiar	dados</button>
 								<button	type="button"	class="btn-primary"	id="credDone">Concluído</button>
 						</div>`;
