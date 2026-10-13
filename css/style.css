@@ -174,14 +174,14 @@ button, input {
   appearance: none;
   border: none;
   cursor: pointer;
-  background: linear-gradient(180deg, (#075BFF), (#0033A0));
+  background: linear-gradient(180deg, (#00D9FF, #0096C7);
   color: #D4AF37;
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.3px;
   padding: 14px 44px;
   border-radius: 999px;
-  box-shadow: 0 12px 24px -8px rgba(7,91,255,0.45);
+  box-shadow: 0 12px 24px -8px rgba(0, 217, 255,0.45);
   transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
 }
 
