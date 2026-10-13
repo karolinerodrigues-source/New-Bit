@@ -395,3 +395,22 @@ button, input {
   object-fit: contain;
   display: block;
 }
+
+/* Botão de registro de presença por QR Code */
+.btn-checkin {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 13px 24px;
+  border: 1px solid #d9b640;
+  border-radius: 999px;
+  color: #f2ce58;
+  text-decoration: none;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-checkin:hover {
+  background: rgba(217, 182, 64, 0.12);
+}
