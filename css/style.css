@@ -174,8 +174,8 @@ button, input {
   appearance: none;
   border: none;
   cursor: pointer;
-  background: linear-gradient(180deg, var(--vivid blue), var(--vivid blue));
-  color: #0555fa;
+  background: linear-gradient(180deg, var(--vividblue), var(--vividblue));
+  color: #075BFF;
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.3px;
