@@ -1,8 +1,30 @@
 // New-Bit — Painel do Administrador
 // Depende de js/store.js, que precisa ser carregado antes deste arquivo.
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    let sessao;
+    try {
+        sessao = await NewBitStore.init(['admin']);
+    } catch (e) {
+        return; // sessão inválida: o store já redirecionou para o login
+    }
+    if (!sessao) return;
+
     const TURMAS = NewBitStore.TURMAS;
+    const esc = NewBitStore.esc;
+
+    // Executa uma ação no servidor: bloqueia clique duplo e mostra o erro, se houver.
+    async function executar(btn, acao) {
+        if (btn) btn.disabled = true;
+        try {
+            return await acao();
+        } catch (e) {
+            alert(e.message || 'Não foi possível concluir. Tente novamente.');
+            return undefined;
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
 
     function renderStats() {
         const state = NewBitStore.getState();
@@ -28,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function qrImg(login) {
         const url = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(login)}`;
 
-        return `<img src="${url}" alt="QR Code de ${login}" style="display:block;margin:14px auto;border-radius:8px;">`;
+        return `<img src="${url}" alt="QR Code de ${esc(login)}" style="display:block;margin:14px auto;border-radius:8px;">`;
     }
 
     function renderProfessores(filter = '') {
@@ -49,9 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="avatar">${NewBitStore.initials(p.nome)}</span>
 
                 <span class="list-main">
-                    <span class="l-name">${p.nome}</span>
+                    <span class="l-name">${esc(p.nome)}</span>
                     <span class="l-sub">
-                        login: ${p.login} · ${p.turmas.join(', ') || 'sem turma'} · limite ${p.limiteMensal}/mês
+                        login: ${esc(p.login)} · ${esc(p.turmas.join(', ') || 'sem turma')} · limite ${Number(p.limiteMensal)}/mês
                     </span>
                 </span>
 
@@ -79,33 +101,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (!p) return;
 
-                openModal(credentialsScreen({
+                mostrarCredenciais({
                     titulo: 'Credenciais do professor',
+                    role: 'professor',
+                    id: p.id,
                     nome: p.nome,
                     perfil: 'Professor',
                     login: p.login,
-                    senha: p.senha,
+                    senha: null,
                     extra: p.turmas.join(', ')
-                }));
-
-                wireCredentialsScreen({
-                    nome: p.nome,
-                    perfil: 'Professor',
-                    login: p.login,
-                    senha: p.senha
                 });
             });
         });
 
         el.querySelectorAll('[data-delete-professor]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const id = Number(btn.dataset.deleteProfessor);
                 const professor = NewBitStore.getProfessor(id);
 
                 if (!professor) return;
 
                 if (confirm(`Deseja realmente excluir o professor ${professor.nome}?`)) {
-                    NewBitStore.excluirProfessor(id);
+                    await executar(btn, () => NewBitStore.excluirProfessor(id));
                     renderAll();
                 }
             });
@@ -130,9 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="avatar">${NewBitStore.initials(a.nome)}</span>
 
                 <span class="list-main">
-                    <span class="l-name">${a.nome}</span>
+                    <span class="l-name">${esc(a.nome)}</span>
                     <span class="l-sub">
-                        login: ${a.login} · ${a.turma} · saldo: ${NewBitStore.getSaldo(a.id)}
+                        login: ${esc(a.login)} · ${esc(a.turma)} · saldo: ${Number(NewBitStore.getSaldo(a.id))}
                     </span>
                 </span>
 
@@ -160,34 +177,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (!a) return;
 
-                openModal(credentialsScreen({
+                mostrarCredenciais({
                     titulo: 'Cartão do aluno',
+                    role: 'aluno',
+                    id: a.id,
                     nome: a.nome,
                     perfil: 'Aluno',
                     login: a.login,
-                    senha: a.senha,
+                    senha: null,
                     extra: a.turma,
                     mostrarQr: true
-                }));
-
-                wireCredentialsScreen({
-                    nome: a.nome,
-                    perfil: 'Aluno',
-                    login: a.login,
-                    senha: a.senha
                 });
             });
         });
 
         el.querySelectorAll('[data-delete-aluno]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const id = Number(btn.dataset.deleteAluno);
                 const aluno = NewBitStore.getAluno(id);
 
                 if (!aluno) return;
 
                 if (confirm(`Deseja realmente excluir o aluno ${aluno.nome}?`)) {
-                    NewBitStore.excluirAluno(id);
+                    await executar(btn, () => NewBitStore.excluirAluno(id));
                     renderAll();
                 }
             });
@@ -210,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         el.innerHTML = filtered.map(p => `
             <div class="list-row">
                 <span class="list-main">
-                    <span class="l-name">${p.nome}</span>
+                    <span class="l-name">${esc(p.nome)}</span>
                 </span>
 
                 <span class="pill">${p.preco} New-Bits</span>
@@ -271,41 +283,42 @@ document.addEventListener('DOMContentLoaded', () => {
         perfil,
         login,
         senha,
+        id,
         extra,
         mostrarQr
     }) {
         return `
-            <h3 class="modal-title">${titulo}</h3>
+            <h3 class="modal-title">${esc(titulo)}</h3>
 
             <p class="modal-sub">
-                Anote/copie os dados abaixo, ou imprima o QR Code para o cartão físico.
+                ${senha ? 'Anote/copie os dados abaixo — a senha só aparece agora. Depois, só dá para gerar uma nova.' : 'Por segurança, a senha não pode ser consultada depois do cadastro. Se foi perdida, gere uma nova.'}
             </p>
 
             <div class="credential-card">
                 <div class="credential-row">
                     <span class="credential-label">Nome</span>
-                    <span class="credential-value">${nome}</span>
+                    <span class="credential-value">${esc(nome)}</span>
                 </div>
 
                 <div class="credential-row">
                     <span class="credential-label">Perfil</span>
-                    <span class="credential-value">${perfil}</span>
+                    <span class="credential-value">${esc(perfil)}</span>
                 </div>
 
                 <div class="credential-row">
                     <span class="credential-label">Login</span>
-                    <span class="credential-value">${login}</span>
+                    <span class="credential-value">${esc(login)}</span>
                 </div>
 
                 <div class="credential-row">
                     <span class="credential-label">Senha</span>
-                    <span class="credential-value">${senha}</span>
+                    <span class="credential-value">${senha ? esc(senha) : 'não consultável (gere uma nova)'}</span>
                 </div>
 
                 ${extra ? `
                     <div class="credential-row">
                         <span class="credential-label">Turma(s)</span>
-                        <span class="credential-value">${extra}</span>
+                        <span class="credential-value">${esc(extra)}</span>
                     </div>
                 ` : ''}
             </div>
@@ -313,6 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${mostrarQr ? qrImg(login) + '<p style="text-align:center;color:var(--muted);font-size:11.5px;">Este QR Code é o cartão do aluno — use-o no tablet do pátio (checkin.html).</p>' : ''}
 
             <div class="modal-actions">
+                ${!senha && id ? `<button type="button" class="modal-cancel" id="credReset">Gerar nova senha</button>` : ''}
                 <button type="button" class="modal-cancel" id="credCopy">
                     Copiar dados
                 </button>
@@ -324,19 +338,38 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    function mostrarCredenciais(dados) {
+        openModal(credentialsScreen(dados));
+        wireCredentialsScreen(dados);
+    }
+
     function wireCredentialsScreen(payload) {
         document.getElementById('credDone').addEventListener('click', closeModal);
+
+        const resetBtn = document.getElementById('credReset');
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', async () => {
+                if (!confirm(`Gerar uma nova senha para ${payload.nome}? A senha atual deixará de funcionar.`)) return;
+
+                const r = await executar(resetBtn, () => NewBitStore.redefinirSenha(payload.role, payload.id));
+
+                if (r) {
+                    mostrarCredenciais({ ...payload, titulo: 'Nova senha gerada', login: r.login, senha: r.senha });
+                }
+            });
+        }
 
         document.getElementById('credCopy').addEventListener('click', () => {
             const texto =
                 `Nome: ${payload.nome}\n` +
                 `Perfil: ${payload.perfil}\n` +
-                `Login: ${payload.login}\n` +
-                `Senha: ${payload.senha}`;
+                `Login: ${payload.login}` +
+                (payload.senha ? `\nSenha: ${payload.senha}` : '');
 
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(texto)
-                    .then(() => alert('Credenciais copiadas!'));
+                    .then(() => alert('Dados copiados!'));
             } else {
                 alert(texto);
             }
@@ -412,7 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('professorCancel').addEventListener('click', closeModal);
 
-        document.getElementById('professorSalvar').addEventListener('click', () => {
+        document.getElementById('professorSalvar').addEventListener('click', async (ev) => {
+            const salvarBtn = ev.currentTarget;
             const nome = document.getElementById('fProfessorNome').value.trim();
             const limiteMensal = document.getElementById('fProfessorLimite').value;
 
@@ -426,28 +460,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const novo = NewBitStore.addProfessor({
+            const novo = await executar(salvarBtn, () => NewBitStore.addProfessor({
                 nome,
                 turmas: Array.from(selecionadas),
                 limiteMensal
-            });
+            }));
+
+            if (!novo) return;
 
             renderAll();
 
-            openModal(credentialsScreen({
+            mostrarCredenciais({
                 titulo: 'Professor cadastrado!',
+                role: 'professor',
+                id: novo.id,
                 nome: novo.nome,
                 perfil: 'Professor',
                 login: novo.login,
                 senha: novo.senha,
                 extra: novo.turmas.join(', ')
-            }));
-
-            wireCredentialsScreen({
-                nome: novo.nome,
-                perfil: 'Professor',
-                login: novo.login,
-                senha: novo.senha
             });
         });
     });
@@ -498,7 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('alunoCancel').addEventListener('click', closeModal);
 
-        document.getElementById('alunoSalvar').addEventListener('click', () => {
+        document.getElementById('alunoSalvar').addEventListener('click', async (ev) => {
+            const salvarBtn = ev.currentTarget;
             const nome = document.getElementById('fAlunoNome').value.trim();
             const turma = document.getElementById('fAlunoTurma').value;
             const lgpd = document.getElementById('fAlunoLgpd').checked;
@@ -513,25 +545,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const novo = NewBitStore.addAluno({ nome, turma });
+            const novo = await executar(salvarBtn, () => NewBitStore.addAluno({ nome, turma }));
+
+            if (!novo) return;
 
             renderAll();
 
-            openModal(credentialsScreen({
+            mostrarCredenciais({
                 titulo: 'Aluno cadastrado!',
+                role: 'aluno',
+                id: novo.id,
                 nome: novo.nome,
                 perfil: 'Aluno',
                 login: novo.login,
                 senha: novo.senha,
                 extra: novo.turma,
                 mostrarQr: true
-            }));
-
-            wireCredentialsScreen({
-                nome: novo.nome,
-                perfil: 'Aluno',
-                login: novo.login,
-                senha: novo.senha
             });
         });
     });
@@ -577,7 +606,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('produtoCancel').addEventListener('click', closeModal);
 
-        document.getElementById('produtoSalvar').addEventListener('click', () => {
+        document.getElementById('produtoSalvar').addEventListener('click', async (ev) => {
+            const salvarBtn = ev.currentTarget;
             const nome = document.getElementById('fProdutoNome').value.trim();
             const preco = Number(document.getElementById('fProdutoPreco').value);
 
@@ -591,7 +621,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            NewBitStore.addProduto({ nome, preco });
+            const salvo = await executar(salvarBtn, () => NewBitStore.addProduto({ nome, preco }));
+
+            if (!salvo) return;
 
             renderAll();
             closeModal();
