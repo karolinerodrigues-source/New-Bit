@@ -3,6 +3,13 @@
 // O "código" lido do QR Code do cartão é o LOGIN do aluno (ex: ana.silva).
 
 document.addEventListener('DOMContentLoaded', () => {
+    // O tablet precisa de um professor ou administrador logado.
+    const sessaoCheckin = NewBitStore.getSession();
+    if (!sessaoCheckin || !['admin', 'professor'].includes(sessaoCheckin.role)) {
+        window.location.href = 'login.html?next=checkin.html';
+        return;
+    }
+
     const feedbackEl = document.getElementById('checkinFeedback');
     const recentList = document.getElementById('recentList');
     let ultimosHoje = [];
@@ -19,27 +26,24 @@ document.addEventListener('DOMContentLoaded', () => {
             : ultimosHoje.map(item => `
                 <div class="list-row">
                     <span class="list-main">
-                        <span class="l-name">${item.nome}</span>
+                        <span class="l-name">${NewBitStore.esc(item.nome)}</span>
                         <span class="l-sub">${item.hora}</span>
                     </span>
                 </div>`).join('');
     }
 
-    function processarCodigo(codigo) {
-        if (typeof NewBitStore !== 'undefined' && NewBitStore.registrarPresenca) {
-            const resultado = NewBitStore.registrarPresenca(codigo);
+    async function processarCodigo(codigo) {
+        try {
+            const resultado = await NewBitStore.registrarPresenca(codigo);
             mostrarFeedback(resultado.ok, resultado.message);
+
             if (resultado.ok && resultado.aluno) {
                 const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 ultimosHoje.unshift({ nome: resultado.aluno.nome, hora });
                 renderRecentList();
             }
-        } else {
-            // Caso o store.js não esteja carregado para testes rápidos
-            const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            mostrarFeedback(true, `Presença registrada: ${codigo}`);
-            ultimosHoje.unshift({ nome: codigo, hora });
-            renderRecentList();
+        } catch (e) {
+            mostrarFeedback(false, e.message || 'Não foi possível registrar a presença.');
         }
     }
 
