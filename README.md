@@ -1,66 +1,31 @@
-# New-Bit — Tela Inicial + Login
+# New-Bit
 
-Protótipo web (HTML/CSS/JS puro, sem instalação nem build) das duas primeiras telas do
-sistema New-Bit: a tela inicial (brasão/emblema) e a tela de login com seleção de perfil
-(Aluno / Professor / Administrador).
+Sistema de pontos (New-Bits) para a escola: painéis de **aluno**, **professor** e **administrador**, mais o **check-in de presença** (tablet do pátio).
 
-## Como abrir no VS Code
+Site: https://karolinerodrigues-source.github.io/New-Bit/
 
-1. Abra a pasta `new-bit` no VS Code (`File > Open Folder...`).
-2. Instale a extensão **Live Server** (de Ritwick Dey), se ainda não tiver.
-3. Clique com o botão direito em `index.html` → **Open with Live Server**.
-4. O navegador abre em `http://127.0.0.1:5500` (ou porta parecida) e atualiza sozinho
-   a cada vez que você salvar um arquivo.
+## Como os dados são salvos
 
-Não precisa de Node, npm nem nenhum outro programa instalado — é só HTML, CSS e JS.
+Os dados ficam em um banco **Supabase**, iguais em qualquer computador, celular ou tablet.
 
-## Estrutura
+- `supabase.sql`: cria as tabelas e as funções do banco (rodar uma vez no *SQL Editor* do Supabase).
+- `js/store.js`: conversa com o banco. Contém a URL do projeto e a chave **pública** (publishable), que pode ficar no código.
+- As tabelas não são acessíveis diretamente: o site só usa funções `nb_*`, que conferem login e perfil.
+- Senhas são guardadas criptografadas. A senha de um aluno ou professor só aparece uma vez, no cadastro; depois, o administrador pode gerar uma nova.
 
-```
-new-bit/
-├─ index.html          → tela inicial (emblema + botão Entrar)
-├─ login.html          → tela de login (abas Aluno/Professor/Administrador)
-├─ aluno.html           → Painel do Aluno (saldo, extrato, ranking, loja, penalidades)
-├─ professor.html       → Painel do Professor (turmas, alunos, dar/tirar pontos)
-├─ css/style.css        → visual base (cores, tipografia, animações, telas estreitas)
-├─ css/dashboard.css    → visual dos painéis (cards, tabelas, modal)
-├─ js/app.js            → interações da tela inicial e do login (agora navega para o painel certo)
-├─ js/aluno.js          → dados de exemplo e renderização do Painel do Aluno
-├─ js/professor.js      → dados de exemplo, lista de alunos e modal de pontos
-└─ assets/              → pasta vazia, reservada para imagens/ícones futuros
-```
+**Nunca** coloque no código a chave `service_role` nem a senha do banco.
 
-## O que já funciona
+## Primeira configuração
 
-- Tela inicial com emblema animado (SVG, sem imagens externas) e botão **Entrar**.
-- Tela de login com 3 abas de perfil, campo de senha com "mostrar/ocultar" e
-  validação simples. Ao clicar em **Acessar**, o login **Aluno** leva direto para
-  `aluno.html` e **Professor** leva para `professor.html` (o perfil Administrador
-  ainda não tem painel — é o próximo a construir).
-- **Painel do Aluno**: saldo em destaque, extrato de movimentações, ranking da
-  turma (com o próprio aluno destacado), vitrine da loja (bloqueia "Trocar" se o
-  saldo for insuficiente) e lista de penalidades.
-- **Painel do Professor**: cartões com nº de alunos, total e média de pontos e
-  limite restante no mês; lista de alunos com busca; botões **+ / −** que abrem um
-  modal para dar ou tirar pontos, com **justificativa obrigatória apenas ao tirar
-  pontos** (como pedido no cronograma do projeto); feed de atividade recente.
+1. No Supabase, abra *SQL Editor*, cole o conteúdo de `supabase.sql` e clique em *Run*.
+2. Crie o administrador rodando este comando (troque `SUA-SENHA-AQUI`; **não** salve a senha no GitHub):
 
-Todos os dados nessas duas telas são **mocks** (arrays no início de `aluno.js` e
-`professor.js`) — é só editar esses arrays para testar outros cenários antes de
-existir backend.
+   ```sql
+   insert into nb.admins (nome, login, senha_hash)
+   values ('Administrador', 'admin.master', extensions.crypt('SUA-SENHA-AQUI', extensions.gen_salt('bf')));
+   ```
+3. Entre em `login.html` pelo perfil **Administrador** com `admin.master@escola.pr.gov.br` e a senha escolhida.
 
-## Próximos passos sugeridos
+## Check-in (tablet)
 
-- **Painel do Administrador**: cadastro de turmas/alunos/professores/produtos e
-  termo de consentimento LGPD.
-- **Autenticação real**: trocar a simulação em `js/app.js` por uma chamada `fetch`
-  para o backend (ou Firebase/Supabase, se não quiserem manter servidor próprio).
-- **Leitura de QR Code**: para a tela de check-in no tablet do pátio, a lib
-  `html5-qrcode` (mesma usada no Bit-B) lê a câmera direto do navegador — não
-  precisa de Java para isso.
-- **Persistir os dados**: hoje os pontos dados/tirados no Painel do Professor só
-  vivem na memória da aba aberta — somem ao recarregar a página. Isso resolve
-  quando o backend entrar.
-
-Qualquer uma dessas telas eu monto seguindo o mesmo estilo visual (o brasão dourado
-sobre fundo azul-marinho) — é só pedir qual entra a seguir.
+`checkin.html` exige um professor ou administrador logado no tablet. Se abrir sem login, ele leva para a tela de entrada e volta ao check-in depois.
