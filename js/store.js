@@ -10,7 +10,7 @@ const NewBitStore = (() => {
     const API_KEY = 'sb_publishable_Vlc-pFL7WkeOqGxoGwapaQ_VaKS8aXd';
     const SESSION_KEY = 'newbit_session_v2';
 
-    const TURMAS = ['6º Ano', '7º Ano', '8º Ano', '9º Ano', '1ª Série EM', '2ª Série EM', '3ª Série EM'];
+    const TURMAS = ['6º Ano A', '6º Ano B', '7º Ano A', '7º Ano B', '8º Ano A', '8º Ano B', '9º Ano A', '1ª Série EM', '2ª Série EM', '3ª Série EM'];
 
     function estadoVazio() {
         return {
