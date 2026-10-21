@@ -74,7 +74,7 @@ nextIds: { aluno: 4, professor: 2, produto: 5, movimentacao: 6, feedback: 1 }
 } 
 // ================================================================== // BANCO ONLINE (Supabase) — é AQUI que os dados passam a ficar salvos // na internet, iguais para todos os computadores e para o tablet. // Cole abaixo a URL e a chave do SEU projeto Supabase (veja o guia). // Enquanto estiverem com "COLE_AQUI...", o site continua funcionando // só no navegador atual (modo antigo), sem dar erro. 
 // ================================================================== const SUPABASE_URL = 'https://aahxkfakgfrxqahfcmjv.supabase.co'; 
-const SUPABASE_KEY = 'Csb_publishable_Vlc-pFL7WkeOqGxoGwapaQ_VaKS8aXd'; 
+const SUPABASE_KEY = 'sb_publishable_Vlc-pFL7WkeOqGxoGwapaQ_VaKS8aXd'; 
 const NUVEM_ATIVA = SUPABASE_URL.indexOf('http') === 0 && 
 SUPABASE_KEY.length > 20; 
 const TABELA_URL = SUPABASE_URL.replace(/\/+$/, '') + 
