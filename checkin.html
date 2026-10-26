@@ -41,10 +41,19 @@
             <p style="color: var(--muted); font-size: 13px;">Aponte o QR Code do cartão do aluno para a câmera.</p>
         </div>
 
+        <section class="panel" id="loginGate" style="display:none; margin-bottom:20px;">
+            <div class="panel-body" style="text-align:center;">
+                <p style="font-weight:600; margin-bottom:6px;">Este tablet precisa estar logado</p>
+                <p style="color: var(--muted); font-size: 13px; margin-bottom:14px;">Entre como <strong>Professor</strong> ou <strong>Administrador</strong> para liberar a leitura dos QR Codes dos alunos.</p>
+                <a class="btn-primary" href="login.html?next=checkin.html">Entrar como professor/admin</a>
+            </div>
+        </section>
+
         <div id="checkinFeedback" class="checkin-feedback"></div>
         
         <!-- Contentor onde a câmara vai ser renderizada -->
         <div id="qr-reader"></div>
+        <button class="btn-primary btn-block" id="cameraRetryBtn" type="button" style="margin: -6px 0 20px;">📷 Abrir câmera e ler QR Code</button>
 
         <section class="panel">
             <div class="panel-header">
