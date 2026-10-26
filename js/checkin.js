@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessaoCheckin = NewBitStore.getSession();
     if (!sessaoCheckin || !['admin', 'professor'].includes(sessaoCheckin.role)) {
         // Em vez de redirecionar sem avisar, explica o motivo e mostra o botão de entrar.
-        document.getElementById('loginGate').style.display = 'block';
+        const gate = document.getElementById('loginGate');
+        if (gate) gate.style.display = 'block'; else window.location.href = 'login.html?next=checkin.html';
         const leitor = document.getElementById('qr-reader');
         const botao = document.getElementById('cameraRetryBtn');
         if (leitor) leitor.style.display = 'none';
@@ -76,7 +77,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---------- Leitura por câmera (QR Code) ----------
     const readerEl = document.getElementById('qr-reader');
-    const retryBtn = document.getElementById('cameraRetryBtn');
+    let retryBtn = document.getElementById('cameraRetryBtn');
+    if (!retryBtn) {
+        // Garante o botão mesmo que o checkin.html esteja desatualizado
+        retryBtn = document.createElement('button');
+        retryBtn.id = 'cameraRetryBtn';
+        retryBtn.type = 'button';
+        retryBtn.className = 'btn-primary btn-block';
+        retryBtn.style.margin = '-6px 0 20px';
+        retryBtn.textContent = '📷 Abrir câmera e ler QR Code';
+        readerEl.insertAdjacentElement('afterend', retryBtn);
+    }
     let scanner = null;
     let ultimoCodigoLido = null;
     let ultimoTimestamp = 0;
