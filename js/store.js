@@ -91,7 +91,8 @@ const NewBitStore = (() => {
             if (msg.includes('sessao_invalida')) {
                 clearSession();
                 if (!window.location.pathname.endsWith('login.html')) {
-                    window.location.href = 'login.html';
+                    const voltarAoCheckin = window.location.pathname.endsWith('checkin.html');
+                    window.location.href = voltarAoCheckin ? 'login.html?next=checkin.html' : 'login.html';
                 }
                 throw new Error('Sua sessão expirou. Entre novamente.');
             }
