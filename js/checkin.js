@@ -48,8 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function processarCodigo(codigoBruto) {
         const codigo = normalizarCodigo(codigoBruto);
-        if (!codigo) { mostrarFeedback(false, 'QR Code vazio ou inválido.'); return; }
-        if (!logado) { mostrarFeedback(false, 'Entre como professor/admin para registrar a presença.'); return; }
         if (processando) return; // evita registrar duas vezes enquanto o servidor responde
         processando = true;
         try {
