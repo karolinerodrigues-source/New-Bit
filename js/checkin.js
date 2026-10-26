@@ -3,18 +3,12 @@
 // O "código" lido do QR Code do cartão é o LOGIN do aluno (ex: ana.silva).
 
 document.addEventListener('DOMContentLoaded', () => {
-    // O tablet precisa de um professor ou administrador logado.
+    // O tablet precisa de um professor ou administrador logado para REGISTRAR presença.
+    // A câmera e o botão ficam sempre visíveis; sem login, só mostramos um aviso.
     const sessaoCheckin = NewBitStore.getSession();
-    if (!sessaoCheckin || !['admin', 'professor'].includes(sessaoCheckin.role)) {
-        // Em vez de redirecionar sem avisar, explica o motivo e mostra o botão de entrar.
-        const gate = document.getElementById('loginGate');
-        if (gate) gate.style.display = 'block'; else window.location.href = 'login.html?next=checkin.html';
-        const leitor = document.getElementById('qr-reader');
-        const botao = document.getElementById('cameraRetryBtn');
-        if (leitor) leitor.style.display = 'none';
-        if (botao) botao.style.display = 'none';
-        return;
-    }
+    const logado = !!(sessaoCheckin && sessaoCheckin.token && ['admin', 'professor'].includes(sessaoCheckin.role));
+    const gate = document.getElementById('loginGate');
+    if (gate) gate.style.display = logado ? 'none' : 'block';
 
     const feedbackEl = document.getElementById('checkinFeedback');
     const recentList = document.getElementById('recentList');
@@ -55,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function processarCodigo(codigoBruto) {
         const codigo = normalizarCodigo(codigoBruto);
         if (!codigo) { mostrarFeedback(false, 'QR Code vazio ou inválido.'); return; }
+        if (!logado) { mostrarFeedback(false, 'Entre como professor/admin para registrar a presença.'); return; }
         if (processando) return; // evita registrar duas vezes enquanto o servidor responde
         processando = true;
         try {
