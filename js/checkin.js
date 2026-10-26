@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessaoCheckin = NewBitStore.getSession();
     const logado = !!(sessaoCheckin && sessaoCheckin.token && ['admin', 'professor'].includes(sessaoCheckin.role));
     const gate = document.getElementById('loginGate');
-    if (gate) gate.style.display = logado ? 'none' : 'block';
+    if (gate) gate.remove(); // aviso de login removido da tela
 
     const feedbackEl = document.getElementById('checkinFeedback');
     const recentList = document.getElementById('recentList');
