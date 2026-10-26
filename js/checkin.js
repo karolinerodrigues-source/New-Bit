@@ -6,7 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // O tablet precisa de um professor ou administrador logado.
     const sessaoCheckin = NewBitStore.getSession();
     if (!sessaoCheckin || !['admin', 'professor'].includes(sessaoCheckin.role)) {
-        window.location.href = 'login.html?next=checkin.html';
+        // Em vez de redirecionar sem avisar, explica o motivo e mostra o botão de entrar.
+        document.getElementById('loginGate').style.display = 'block';
+        const leitor = document.getElementById('qr-reader');
+        const botao = document.getElementById('cameraRetryBtn');
+        if (leitor) leitor.style.display = 'none';
+        if (botao) botao.style.display = 'none';
         return;
     }
 
@@ -14,10 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const recentList = document.getElementById('recentList');
     let ultimosHoje = [];
 
+    let feedbackTimer = null;
     function mostrarFeedback(ok, mensagem) {
         feedbackEl.textContent = mensagem;
         feedbackEl.className = 'checkin-feedback ' + (ok ? 'is-ok' : 'is-err');
-        setTimeout(() => { feedbackEl.className = 'checkin-feedback'; }, 4000);
+        clearTimeout(feedbackTimer);
+        feedbackTimer = setTimeout(() => { feedbackEl.className = 'checkin-feedback'; }, 4000);
     }
 
     function renderRecentList() {
@@ -32,7 +39,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`).join('');
     }
 
-    async function processarCodigo(codigo) {
+    // O QR do cartão guarda o login do aluno, mas deixamos a leitura tolerante:
+    // remove espaços/quebras de linha, ignora maiúsculas e aceita e-mail completo.
+    function normalizarCodigo(texto) {
+        return String(texto || '')
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '')
+            .split('@')[0];
+    }
+
+    let processando = false;
+
+    async function processarCodigo(codigoBruto) {
+        const codigo = normalizarCodigo(codigoBruto);
+        if (!codigo) { mostrarFeedback(false, 'QR Code vazio ou inválido.'); return; }
+        if (processando) return; // evita registrar duas vezes enquanto o servidor responde
+        processando = true;
         try {
             const resultado = await NewBitStore.registrarPresenca(codigo);
             mostrarFeedback(resultado.ok, resultado.message);
@@ -44,12 +67,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {
             mostrarFeedback(false, e.message || 'Não foi possível registrar a presença.');
+        } finally {
+            processando = false;
         }
     }
 
     renderRecentList();
 
     // ---------- Leitura por câmera (QR Code) ----------
+    const readerEl = document.getElementById('qr-reader');
+    const retryBtn = document.getElementById('cameraRetryBtn');
+    let scanner = null;
     let ultimoCodigoLido = null;
     let ultimoTimestamp = 0;
 
@@ -62,23 +90,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function onScanFailure() {
-        // Ignora frames sem leitura
+        // Ignora frames sem QR Code (acontece várias vezes por segundo)
     }
 
-    if (typeof Html5QrcodeScanner !== 'undefined') {
-        try {
-            // Ajustado qrbox para formato de objeto { width, height }
-            const scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: { width: 250, height: 250 } }, false);
-            scanner.render(onScanSuccess, onScanFailure);
-        } catch (e) {
-            console.error('New-Bit: não foi possível iniciar a câmera.', e);
-            document.getElementById('qr-reader').innerHTML =
-                '<p class="empty-state" style="padding:20px;">Não foi possível acessar a câmera. Use o campo manual abaixo.</p>';
-        }
-    } else {
-        document.getElementById('qr-reader').innerHTML =
-            '<p class="empty-state" style="padding:20px;">Biblioteca de câmera não carregou (sem internet?). Use o campo manual abaixo.</p>';
+    function erroCamera(mensagem) {
+        readerEl.innerHTML = '<p class="empty-state" style="padding:20px;color:#fff;">' +
+            NewBitStore.esc(mensagem) + '</p>';
+        if (retryBtn) { retryBtn.textContent = '📷 Tentar de novo'; retryBtn.style.display = 'block'; }
     }
+
+    // Caixa de leitura proporcional ao vídeo (um valor fixo quebra em telas pequenas)
+    function calcularQrbox(largura, altura) {
+        const lado = Math.floor(Math.min(largura, altura) * 0.7);
+        return { width: Math.max(lado, 120), height: Math.max(lado, 120) };
+    }
+
+    async function pararScanner() {
+        if (!scanner) return;
+        try { if (scanner.isScanning) await scanner.stop(); } catch (e) { /* já parado */ }
+        try { scanner.clear(); } catch (e) { /* nada a limpar */ }
+        scanner = null;
+    }
+
+    async function iniciarCamera() {
+        if (retryBtn) retryBtn.style.display = 'none';
+        readerEl.innerHTML = '<p class="empty-state" style="padding:20px;color:#fff;">Abrindo a câmera… se o navegador pedir, toque em "Permitir".</p>';
+
+        if (typeof Html5Qrcode === 'undefined') {
+            erroCamera('Biblioteca de câmera não carregou (sem internet?). Use o campo manual abaixo.');
+            return;
+        }
+        // getUserMedia só funciona em HTTPS ou localhost (não em file:// nem http:// comum)
+        if (!window.isSecureContext || !navigator.mediaDevices) {
+            erroCamera('A câmera só funciona em página segura (https://). Use o campo manual abaixo.');
+            return;
+        }
+
+        await pararScanner();
+        readerEl.innerHTML = '';
+        scanner = new Html5Qrcode('qr-reader', { verbose: false });
+
+        const config = { fps: 10, qrbox: calcularQrbox, aspectRatio: 1.0 };
+
+        try {
+            // 1ª tentativa: câmera traseira (a que o tablet usa para ler cartões)
+            await scanner.start({ facingMode: 'environment' }, config, onScanSuccess, onScanFailure);
+        } catch (e1) {
+            console.warn('New-Bit: câmera traseira indisponível, tentando qualquer câmera.', e1);
+            try {
+                // 2ª tentativa: primeira câmera listada (notebooks, tablets só com frontal)
+                const cameras = await Html5Qrcode.getCameras();
+                if (!cameras || !cameras.length) throw new Error('Nenhuma câmera encontrada.');
+                await scanner.start(cameras[0].id, config, onScanSuccess, onScanFailure);
+            } catch (e2) {
+                console.error('New-Bit: não foi possível iniciar a câmera.', e2);
+                const negada = /permission|denied|notallowed/i.test(String(e2 && (e2.name || e2.message || e2)));
+                erroCamera(negada
+                    ? 'Permissão da câmera negada. Libere a câmera nas configurações do navegador e toque em "Tentar de novo".'
+                    : 'Não foi possível acessar a câmera. Use o campo manual abaixo ou toque em "Tentar de novo".');
+            }
+        }
+    }
+
+    if (retryBtn) retryBtn.addEventListener('click', iniciarCamera);
+
+    // Libera a câmera ao sair da página / trocar de aba no tablet
+    window.addEventListener('pagehide', pararScanner);
+
 
     // ---------- Entrada manual (sem câmera) ----------
     const manualBtn = document.getElementById('manualBtn');
