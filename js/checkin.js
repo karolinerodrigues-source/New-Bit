@@ -1,179 +1,75 @@
-// New-Bit — Tablet do pátio (check-in por QR Code)
-// Depende de js/store.js e da biblioteca html5-qrcode (carregada via CDN no HTML).
-// O "código" lido do QR Code do cartão é o LOGIN do aluno (ex: ana.silva).
 
-document.addEventListener('DOMContentLoaded', () => {
-    // O check-in registra a presença direto ao ler o QR Code, sem exigir login no tablet.
-    const gate = document.getElementById('loginGate');
-    if (gate) gate.remove(); // aviso de login removido da tela
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablet do Pátio · New-Bit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Caminhos corrigidos para a pasta raiz -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    
+    <style>
+        .checkin-wrap { max-width: 520px; margin: 0 auto; padding: 32px 16px 60px; }
+        .checkin-title { text-align: center; margin-bottom: 22px; }
+        #qr-reader { border-radius: 14px; overflow: hidden; border: 1px solid var(--line, #e2e8f0); margin-bottom: 20px; min-height: 250px; background: #000; }
+        .checkin-feedback { padding: 14px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; margin-bottom: 18px; display: none; }
+        .checkin-feedback.is-ok { display: block; background: rgba(72,187,120,0.12); color: #2f855a; }
+        .checkin-feedback.is-err { display: block; background: rgba(229,62,62,0.12); color: #c53030; }
+        .manual-row { display: flex; gap: 10px; margin-top: 8px; }
+        .manual-row .field-input { flex: 1; }
+    </style>
+</head>
+<body class="app-body">
+    <div class="shell checkin-wrap">
+        <header class="topbar" style="margin-bottom: 10px;">
+            <a href="index.html" class="topbar-brand">
+                <span class="topbar-crest">NB</span>
+                <span>
+                    <span class="topbar-school">Colégio Barbosa Ferraz</span>
+                    <span class="topbar-name">New&#8209;Bit</span>
+                </span>
+            </a>
+        </header>
 
-    const feedbackEl = document.getElementById('checkinFeedback');
-    const recentList = document.getElementById('recentList');
-    let ultimosHoje = [];
+        <div class="checkin-title">
+            <span class="page-eyebrow">Acolhimento</span>
+            <h1 class="page-title">Tablet do pátio — Check-in</h1>
+            <p style="color: var(--muted); font-size: 13px;">Aponte o QR Code do cartão do aluno para a câmera.</p>
+        </div>
 
-    let feedbackTimer = null;
-    function mostrarFeedback(ok, mensagem) {
-        feedbackEl.textContent = mensagem;
-        feedbackEl.className = 'checkin-feedback ' + (ok ? 'is-ok' : 'is-err');
-        clearTimeout(feedbackTimer);
-        feedbackTimer = setTimeout(() => { feedbackEl.className = 'checkin-feedback'; }, 4000);
-    }
+        <div id="checkinFeedback" class="checkin-feedback"></div>
+        
+        <!-- Contentor onde a câmara vai ser renderizada -->
+        <div id="qr-reader"></div>
 
-    function renderRecentList() {
-        recentList.innerHTML = ultimosHoje.length === 0
-            ? '<p class="empty-state">Nenhuma presença registrada ainda hoje.</p>'
-            : ultimosHoje.map(item => `
-                <div class="list-row">
-                    <span class="list-main">
-                        <span class="l-name">${NewBitStore.esc(item.nome)}</span>
-                        <span class="l-sub">${item.hora}</span>
-                    </span>
-                </div>`).join('');
-    }
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Sem câmera? Digite o código do cartão</h2>
+            </div>
+            <div class="panel-body">
+                <div class="manual-row">
+                    <input class="field-input" type="text" id="manualLogin" placeholder="ex: ana.silva">
+                    <button class="btn-primary" id="manualBtn">Registrar</button>
+                </div>
+            </div>
+        </section>
 
-    // O QR do cartão guarda o login do aluno, mas deixamos a leitura tolerante:
-    // remove espaços/quebras de linha, ignora maiúsculas e aceita e-mail completo.
-    function normalizarCodigo(texto) {
-        return String(texto || '')
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, '')
-            .split('@')[0];
-    }
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Últimas presenças registradas</h2>
+            </div>
+            <div class="panel-body" id="recentList"></div>
+        </section>
+    </div>
 
-    let processando = false;
-
-    async function processarCodigo(codigoBruto) {
-        const codigo = normalizarCodigo(codigoBruto);
-        if (!codigo) { mostrarFeedback(false, 'QR Code vazio ou inválido.'); return; }
-        if (processando) return; // evita registrar duas vezes enquanto o servidor responde
-        processando = true;
-        try {
-            const resultado = await NewBitStore.registrarPresenca(codigo);
-            mostrarFeedback(resultado.ok, resultado.message);
-
-            if (resultado.ok && resultado.aluno) {
-                const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                ultimosHoje.unshift({ nome: resultado.aluno.nome, hora });
-                renderRecentList();
-            }
-        } catch (e) {
-            mostrarFeedback(false, e.message || 'Não foi possível registrar a presença.');
-        } finally {
-            processando = false;
-        }
-    }
-
-    renderRecentList();
-
-    // ---------- Leitura por câmera (QR Code) ----------
-    const readerEl = document.getElementById('qr-reader');
-    let retryBtn = document.getElementById('cameraRetryBtn');
-    if (!retryBtn) {
-        // Garante o botão mesmo que o checkin.html esteja desatualizado
-        retryBtn = document.createElement('button');
-        retryBtn.id = 'cameraRetryBtn';
-        retryBtn.type = 'button';
-        retryBtn.className = 'btn-primary btn-block';
-        retryBtn.style.margin = '-6px 0 20px';
-        retryBtn.textContent = '📷 Abrir câmera e ler QR Code';
-        readerEl.insertAdjacentElement('afterend', retryBtn);
-    }
-    let scanner = null;
-    let ultimoCodigoLido = null;
-    let ultimoTimestamp = 0;
-
-    function onScanSuccess(decodedText) {
-        const agora = Date.now();
-        if (decodedText === ultimoCodigoLido && (agora - ultimoTimestamp) < 4000) return;
-        ultimoCodigoLido = decodedText;
-        ultimoTimestamp = agora;
-        processarCodigo(decodedText);
-    }
-
-    function onScanFailure() {
-        // Ignora frames sem QR Code (acontece várias vezes por segundo)
-    }
-
-    function erroCamera(mensagem) {
-        readerEl.innerHTML = '<p class="empty-state" style="padding:20px;color:#fff;">' +
-            NewBitStore.esc(mensagem) + '</p>';
-        if (retryBtn) { retryBtn.textContent = '📷 Tentar de novo'; retryBtn.style.display = 'block'; }
-    }
-
-    // Caixa de leitura proporcional ao vídeo (um valor fixo quebra em telas pequenas)
-    function calcularQrbox(largura, altura) {
-        const lado = Math.floor(Math.min(largura, altura) * 0.7);
-        return { width: Math.max(lado, 120), height: Math.max(lado, 120) };
-    }
-
-    async function pararScanner() {
-        if (!scanner) return;
-        try { if (scanner.isScanning) await scanner.stop(); } catch (e) { /* já parado */ }
-        try { scanner.clear(); } catch (e) { /* nada a limpar */ }
-        scanner = null;
-    }
-
-    async function iniciarCamera() {
-        if (retryBtn) retryBtn.style.display = 'none';
-        readerEl.innerHTML = '<p class="empty-state" style="padding:20px;color:#fff;">Abrindo a câmera… se o navegador pedir, toque em "Permitir".</p>';
-
-        if (typeof Html5Qrcode === 'undefined') {
-            erroCamera('Biblioteca de câmera não carregou (sem internet?). Use o campo manual abaixo.');
-            return;
-        }
-        // getUserMedia só funciona em HTTPS ou localhost (não em file:// nem http:// comum)
-        if (!window.isSecureContext || !navigator.mediaDevices) {
-            erroCamera('A câmera só funciona em página segura (https://). Use o campo manual abaixo.');
-            return;
-        }
-
-        await pararScanner();
-        readerEl.innerHTML = '';
-        scanner = new Html5Qrcode('qr-reader', { verbose: false });
-
-        const config = { fps: 10, qrbox: calcularQrbox, aspectRatio: 1.0 };
-
-        try {
-            // 1ª tentativa: câmera traseira (a que o tablet usa para ler cartões)
-            await scanner.start({ facingMode: 'environment' }, config, onScanSuccess, onScanFailure);
-        } catch (e1) {
-            console.warn('New-Bit: câmera traseira indisponível, tentando qualquer câmera.', e1);
-            try {
-                // 2ª tentativa: primeira câmera listada (notebooks, tablets só com frontal)
-                const cameras = await Html5Qrcode.getCameras();
-                if (!cameras || !cameras.length) throw new Error('Nenhuma câmera encontrada.');
-                await scanner.start(cameras[0].id, config, onScanSuccess, onScanFailure);
-            } catch (e2) {
-                console.error('New-Bit: não foi possível iniciar a câmera.', e2);
-                const negada = /permission|denied|notallowed/i.test(String(e2 && (e2.name || e2.message || e2)));
-                erroCamera(negada
-                    ? 'Permissão da câmera negada. Libere a câmera nas configurações do navegador e toque em "Tentar de novo".'
-                    : 'Não foi possível acessar a câmera. Use o campo manual abaixo ou toque em "Tentar de novo".');
-            }
-        }
-    }
-
-    if (retryBtn) retryBtn.addEventListener('click', iniciarCamera);
-
-    // Libera a câmera ao sair da página / trocar de aba no tablet
-    window.addEventListener('pagehide', pararScanner);
-
-
-    // ---------- Entrada manual (sem câmera) ----------
-    const manualBtn = document.getElementById('manualBtn');
-    const manualInput = document.getElementById('manualLogin');
-
-    if (manualBtn && manualInput) {
-        manualBtn.addEventListener('click', () => {
-            const codigo = manualInput.value.trim();
-            if (!codigo) { mostrarFeedback(false, 'Digite o login do aluno.'); return; }
-            processarCodigo(codigo);
-            manualInput.value = '';
-        });
-
-        manualInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') manualBtn.click();
-        });
-    }
-});
+    <!-- Scripts com caminhos corrigidos -->
+    <script src="js/store.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="js/checkin.js"></script>
+</body>
+</html>
