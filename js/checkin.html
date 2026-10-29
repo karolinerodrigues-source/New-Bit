@@ -7,19 +7,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dashboard.css">
+
     <style>
         .checkin-wrap { max-width: 520px; margin: 0 auto; padding: 32px 16px 60px; }
         .checkin-title { text-align: center; margin-bottom: 22px; }
-        #qr-reader { border-radius: 14px; overflow: hidden; border: 1px solid var(--line, #e2e8f0); margin-bottom: 14px; min-height: 250px; background: #000; color: #fff; }
-        #qr-reader .cam-msg { padding: 20px; text-align: center; font-size: 14px; }
+        #qr-reader { border-radius: 14px; overflow: hidden; border: 1px solid var(--line, #e2e8f0); margin-bottom: 20px; min-height: 250px; background: #000; }
         .checkin-feedback { padding: 14px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; margin-bottom: 18px; display: none; }
         .checkin-feedback.is-ok { display: block; background: rgba(72,187,120,0.12); color: #2f855a; }
         .checkin-feedback.is-err { display: block; background: rgba(229,62,62,0.12); color: #c53030; }
         .manual-row { display: flex; gap: 10px; margin-top: 8px; }
         .manual-row .field-input { flex: 1; }
-        #cameraBtn { display: block; width: 100%; margin: 0 0 22px; }
     </style>
 </head>
 <body class="app-body">
@@ -42,8 +42,8 @@
 
         <div id="checkinFeedback" class="checkin-feedback"></div>
 
-        <div id="qr-reader"><div class="cam-msg">Toque no botão abaixo para ligar a câmera.</div></div>
-        <button class="btn-primary btn-block" id="cameraBtn" type="button">📷 Abrir câmera e ler QR Code</button>
+        <div id="qr-reader"></div>
+        <button class="btn-primary btn-block" id="cameraRetryBtn" type="button" style="margin: -6px 0 20px;">📷 Abrir câmera e ler QR Code</button>
 
         <section class="panel">
             <div class="panel-header">
@@ -52,7 +52,7 @@
             <div class="panel-body">
                 <div class="manual-row">
                     <input class="field-input" type="text" id="manualLogin" placeholder="ex: ana.silva">
-                    <button class="btn-primary" id="manualBtn" type="button">Registrar</button>
+                    <button class="btn-primary" id="manualBtn">Registrar</button>
                 </div>
             </div>
         </section>
@@ -65,67 +65,8 @@
         </section>
     </div>
 
+    <script src="js/store.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script>
-    // New-Bit — Check-in do pátio. Tudo está neste arquivo (não depende de js/store.js nem de js/checkin.js).
-    // Registra a presença direto ao ler o QR Code, sem exigir login no tablet.
-    (function () {
-        var API_URL = 'https://aahxkfakgfrxqahfcmjv.supabase.co';
-        var API_KEY = 'sb_publishable_Vlc-pFL7WkeOqGxoGwapaQ_VaKS8aXd';
-
-        var feedbackEl = document.getElementById('checkinFeedback');
-        var recentList = document.getElementById('recentList');
-        var readerEl = document.getElementById('qr-reader');
-        var cameraBtn = document.getElementById('cameraBtn');
-        var manualBtn = document.getElementById('manualBtn');
-        var manualInput = document.getElementById('manualLogin');
-
-        var ultimosHoje = [];
-        var feedbackTimer = null;
-        var processando = false;
-        var scanner = null;
-        var ultimoCodigo = null;
-        var ultimoTempo = 0;
-
-        function esc(v) {
-            return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-            });
-        }
-
-        function mostrarFeedback(ok, msg) {
-            feedbackEl.textContent = msg;
-            feedbackEl.className = 'checkin-feedback ' + (ok ? 'is-ok' : 'is-err');
-            clearTimeout(feedbackTimer);
-            feedbackTimer = setTimeout(function () { feedbackEl.className = 'checkin-feedback'; }, 5000);
-        }
-
-        function renderRecentList() {
-            if (!ultimosHoje.length) {
-                recentList.innerHTML = '<p class="empty-state">Nenhuma presença registrada ainda hoje.</p>';
-                return;
-            }
-            recentList.innerHTML = ultimosHoje.map(function (i) {
-                return '<div class="list-row"><span class="list-main"><span class="l-name">' + esc(i.nome) +
-                       '</span><span class="l-sub">' + esc(i.hora) + '</span></span></div>';
-            }).join('');
-        }
-
-        function normalizarCodigo(t) {
-            return String(t || '').trim().toLowerCase().replace(/\s+/g, '').split('@')[0];
-        }
-
-        // Se um professor/admin estiver logado neste navegador, o token dele é enviado; senão vai vazio.
-        function tokenSalvo() {
-            try {
-                var s = JSON.parse(sessionStorage.getItem('newbit_session_v2'));
-                return s && s.token ? s.token : null;
-            } catch (e) { return null; }
-        }
-
-        async function registrarPresenca(login) {
-            var res;
-            try {
-                res = await fetch(API_URL + '/rest/v1/rpc/nb_presenca', {
-                    method: 'POST',
-                    headers: { 'Content-Type':
+    <script src="js/checkin.js"></script>
+</body>
+</html>
