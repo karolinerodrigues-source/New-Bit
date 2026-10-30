@@ -71,7 +71,7 @@ const NewBitStore = (() => {
     }
 
     // ---------- comunicação com o servidor ----------
-    async function rpc(nome, args = {}) {
+    async function rpc(nome, args = {}, opcoes = {}) {
         let res;
         try {
             res = await fetch(`${API_URL}/rest/v1/rpc/${nome}`, {
@@ -88,6 +88,10 @@ const NewBitStore = (() => {
 
         if (!res.ok) {
             const msg = (corpo && corpo.message) || '';
+            if (msg.includes('sessao_invalida') && opcoes.semRedirecionar) {
+                // Tablet do pátio: não manda para o login, só avisa na própria tela.
+                throw new Error('O servidor ainda exige login de professor ou administrador para registrar presença. Entre com um deles ou peça para liberar a função nb_presenca no Supabase.');
+            }
             if (msg.includes('sessao_invalida')) {
                 clearSession();
                 if (!window.location.pathname.endsWith('login.html')) {
@@ -223,8 +227,9 @@ const NewBitStore = (() => {
     }
 
     async function registrarPresenca(login) {
-        const r = await rpc('nb_presenca', { p_token: token(), p_login: login });
-        return { ok: !!r.ok, message: r.message, aluno: r.aluno, saldo: r.saldo };
+        // Funciona com ou sem professor/admin logado no tablet.
+        const r = (await rpc('nb_presenca', { p_token: token(), p_login: login }, { semRedirecionar: true })) || {};
+        return { ok: !!r.ok, message: r.message || (r.ok ? 'Presença registrada.' : 'Não foi possível registrar.'), aluno: r.aluno, saldo: r.saldo };
     }
 
     // Botão "Sair" das páginas: encerra a sessão no servidor antes de voltar ao login.
