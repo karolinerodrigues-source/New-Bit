@@ -1,251 +1,108 @@
-// New-Bit — camada de dados (Supabase)
-//
-// Os dados ficam no banco do Supabase, então são os mesmos em qualquer dispositivo.
-// O site só chama as funções "nb_*" criadas pelo arquivo supabase.sql.
-// A chave abaixo é a chave PÚBLICA (publishable) — ela pode ficar no código.
-// NUNCA coloque aqui a chave "service_role" nem a senha do banco.
+// New-Bit — Tablet do pátio (check-in por QR Code)
+// Precisa de: js/store.js (banco Supabase) e da biblioteca html5-qrcode (carregada no checkin.html).
+// O QR Code do cartão guarda o LOGIN do aluno (ex.: ana.silva).
+// IMPORTANTE: este arquivo NUNCA troca de página. Se der erro, só mostra a mensagem na tela.
 
-const NewBitStore = (() => {
-    const API_URL = 'https://aahxkfakgfrxqahfcmjv.supabase.co';
-    const API_KEY = 'sb_publishable_Vlc-pFL7WkeOqGxoGwapaQ_VaKS8aXd';
-    const SESSION_KEY = 'newbit_session_v2';
+document.addEventListener('DOMContentLoaded', () => {
 
-    const TURMAS = ['6º Ano A', '6º Ano B', '7º Ano A', '7º Ano B', '8º Ano A', '8º Ano B', '9º Ano A', '1ª Série EM', '2ª Série EM', '3ª Série EM'];
+    const feedbackEl = document.getElementById('checkinFeedback');
+    const recentList = document.getElementById('recentList');
+    const retryBtn = document.getElementById('cameraRetryBtn');
+    const leitorEl = document.getElementById('qr-reader');
+    const ultimos = [];
 
-    function estadoVazio() {
-        return {
-            professores: [],
-            alunos: [],
-            produtos: [],
-            movimentacoes: [],
-            ranking: [],
-            limite: { limite: 0, usado: 0, restante: 0 }
-        };
+    function mostrarFeedback(ok, mensagem) {
+        feedbackEl.textContent = mensagem;
+        feedbackEl.className = 'checkin-feedback ' + (ok ? 'is-ok' : 'is-err');
+        clearTimeout(mostrarFeedback.t);
+        mostrarFeedback.t = setTimeout(() => { feedbackEl.className = 'checkin-feedback'; }, 6000);
     }
 
-    let cache = estadoVazio();
-
-    // ---------- utilidades ----------
-    function esc(valor) {
-        return String(valor ?? '').replace(/[&<>"']/g, c => (
-            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-        ));
-    }
-
-    function initials(name) {
-        return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-    }
-
-    function diaAtual(date = new Date()) {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    }
-
-    function formatDateTime(iso) {
-        const d = new Date(iso);
-        const hora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        if (diaAtual(d) === diaAtual()) return `Hoje, ${hora}`;
-        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-    }
-
-    // ---------- sessão (fica só nesta aba do navegador) ----------
-    function getSession() {
-        try {
-            return JSON.parse(sessionStorage.getItem(SESSION_KEY));
-        } catch (e) {
-            return null;
+    function renderRecentes() {
+        if (ultimos.length === 0) {
+            recentList.innerHTML = '<p class="empty-state">Nenhuma presença registrada ainda hoje.</p>';
+            return;
         }
+        recentList.innerHTML = ultimos.map(item => `
+            <div class="list-row">
+                <span class="list-main">
+                    <span class="l-name">${NewBitStore.esc(item.nome)}</span>
+                    <span class="l-sub">${item.hora}</span>
+                </span>
+            </div>`).join('');
     }
 
-    function setSession(sessao) {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessao));
-    }
-
-    function clearSession() {
-        sessionStorage.removeItem(SESSION_KEY);
-        cache = estadoVazio();
-    }
-
-    function token() {
-        const s = getSession();
-        return s ? s.token : null;
-    }
-
-    // ---------- comunicação com o servidor ----------
-    async function rpc(nome, args = {}, opcoes = {}) {
-        let res;
+    // Registra a presença no servidor. Qualquer erro aparece na tela (sem sair da página).
+    async function processarCodigo(codigo) {
+        const login = (codigo || '').trim().toLowerCase();
+        if (!login) { mostrarFeedback(false, 'Código vazio. Tente ler o cartão de novo.'); return; }
         try {
-            res = await fetch(`${API_URL}/rest/v1/rpc/${nome}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', apikey: API_KEY },
-                body: JSON.stringify(args)
-            });
-        } catch (e) {
-            throw new Error('Sem conexão com o servidor. Verifique a internet e tente de novo.');
-        }
-
-        let corpo = null;
-        try { corpo = await res.json(); } catch (e) { /* resposta vazia */ }
-
-        if (!res.ok) {
-            const msg = (corpo && corpo.message) || '';
-            if (msg.includes('sessao_invalida') && opcoes.semRedirecionar) {
-                // Tablet do pátio: não manda para o login, só avisa na própria tela.
-                throw new Error('O servidor ainda exige login de professor ou administrador para registrar presença. Entre com um deles ou peça para liberar a função nb_presenca no Supabase.');
+            const r = await NewBitStore.registrarPresenca(login);
+            mostrarFeedback(r.ok, r.message);
+            if (r.ok && r.aluno) {
+                const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                ultimos.unshift({ nome: r.aluno.nome || login, hora });
+                if (ultimos.length > 10) ultimos.pop();
+                renderRecentes();
             }
-            if (msg.includes('sessao_invalida')) {
-                clearSession();
-                if (!window.location.pathname.endsWith('login.html')) {
-                    const voltarAoCheckin = window.location.pathname.endsWith('checkin.html');
-                    window.location.href = voltarAoCheckin ? 'login.html?next=checkin.html' : 'login.html';
-                }
-                throw new Error('Sua sessão expirou. Entre novamente.');
-            }
-            console.error('New-Bit: erro do servidor em', nome, corpo);
-            throw new Error('Erro no servidor. Tente novamente em instantes.');
-        }
-        return corpo;
-    }
-
-    async function refresh() {
-        cache = Object.assign(estadoVazio(), await rpc('nb_estado', { p_token: token() }));
-        return cache;
-    }
-
-    // Garante que há alguém logado com um dos perfis permitidos.
-    function requireSession(perfis) {
-        const s = getSession();
-        if (!s || !s.token || (perfis && !perfis.includes(s.role))) {
-            window.location.href = 'login.html';
-            return null;
-        }
-        return s;
-    }
-
-    // Chamar no início de cada painel: valida o login e carrega os dados.
-    async function init(perfis) {
-        const s = requireSession(perfis);
-        if (!s) return null;
-        await refresh();
-        return s;
-    }
-
-    async function authenticate(role, login, senha) {
-        const r = await rpc('nb_login', { p_role: role, p_login: login, p_senha: senha });
-        if (!r || r.erro === 'credenciais') {
-            return { ok: false, message: 'Login ou senha inválidos para esse perfil.' };
-        }
-        if (r.erro === 'bloqueado') {
-            return { ok: false, message: 'Muitas tentativas erradas. Aguarde 15 minutos e tente de novo.' };
-        }
-        setSession({ token: r.token, id: r.user.id, role: r.user.role, nome: r.user.nome, login: r.user.login });
-        return { ok: true, user: r.user };
-    }
-
-    async function logout() {
-        const t = token();
-        clearSession();
-        if (t) {
-            try { await rpc('nb_logout', { p_token: t }); } catch (e) { /* já saiu */ }
-        }
-    }
-
-    // ---------- leitura (usa os dados já carregados por init/refresh) ----------
-    function getState() { return cache; }
-    function getAluno(id) { return cache.alunos.find(a => a.id === Number(id)) || null; }
-    function getProfessor(id) { return cache.professores.find(p => p.id === Number(id)) || null; }
-    function getAlunosDaTurma(turma) { return cache.alunos.filter(a => a.turma === turma); }
-    function getSaldo(alunoId) { const a = getAluno(alunoId); return a ? a.saldo : 0; }
-
-    function getExtrato(alunoId) {
-        return cache.movimentacoes
-            .filter(m => m.alunoId === Number(alunoId))
-            .sort((a, b) => new Date(b.data) - new Date(a.data));
-    }
-
-    function getRanking(turma) {
-        if (cache.ranking.length) return cache.ranking;
-        return getAlunosDaTurma(turma)
-            .map(a => ({ id: a.id, nome: a.nome, pontos: a.saldo }))
-            .sort((x, y) => y.pontos - x.pontos);
-    }
-
-    function limiteInfo() { return cache.limite; }
-
-    // ---------- escrita (todas conferidas no servidor) ----------
-    async function acao(nome, args) {
-        const r = await rpc(nome, Object.assign({ p_token: token() }, args));
-        if (r && r.ok === false) throw new Error(r.message || 'Não foi possível concluir.');
-        await refresh();
-        return r;
-    }
-
-    async function addAluno({ nome, turma }) {
-        return (await acao('nb_add_aluno', { p_nome: nome, p_turma: turma })).aluno;
-    }
-
-    async function addProfessor({ nome, turmas, limiteMensal }) {
-        return (await acao('nb_add_professor', {
-            p_nome: nome, p_turmas: turmas, p_limite: Number(limiteMensal) || 300
-        })).professor;
-    }
-
-    async function addProduto({ nome, preco }) {
-        return (await acao('nb_add_produto', { p_nome: nome, p_preco: Number(preco) })).produto;
-    }
-
-    async function excluirAluno(id) { await acao('nb_excluir_aluno', { p_id: Number(id) }); return true; }
-    async function excluirProfessor(id) { await acao('nb_excluir_professor', { p_id: Number(id) }); return true; }
-
-    async function redefinirSenha(role, id) {
-        return acao('nb_redefinir_senha', { p_role: role, p_id: Number(id) });
-    }
-
-    // Regras de limite, turma e justificativa são checadas no servidor.
-    async function darPontos({ alunoId, delta, motivo }) {
-        try {
-            const r = await acao('nb_dar_pontos', {
-                p_aluno_id: Number(alunoId), p_delta: Number(delta), p_motivo: motivo || ''
-            });
-            return { ok: true, message: r.message, saldo: r.saldo };
         } catch (e) {
-            return { ok: false, message: e.message };
+            console.error('New-Bit: falha ao registrar presença', e);
+            mostrarFeedback(false, e.message || 'Não foi possível registrar. Tente de novo.');
         }
     }
 
-    async function resgatarProduto({ produtoId }) {
+    renderRecentes();
+
+    // ---------- Câmera ----------
+    let leitor = null;
+    let lendo = false;
+    let ultimoCodigo = null;
+    let ultimoMomento = 0;
+
+    function aoLerQr(texto) {
+        const agora = Date.now();
+        // a câmera lê o mesmo cartão várias vezes por segundo: ignora repetições por 5 s
+        if (texto === ultimoCodigo && agora - ultimoMomento < 5000) return;
+        ultimoCodigo = texto;
+        ultimoMomento = agora;
+        processarCodigo(texto);
+    }
+
+    async function abrirCamera() {
+        if (typeof Html5Qrcode === 'undefined') {
+            leitorEl.innerHTML = '<p style="color:#fff;padding:20px;">A biblioteca da câmera não carregou (sem internet?). Use o campo manual abaixo.</p>';
+            return;
+        }
+        if (lendo) return;
         try {
-            const r = await acao('nb_resgatar', { p_produto_id: Number(produtoId) });
-            return { ok: true, message: r.message, saldo: r.saldo };
+            if (!leitor) leitor = new Html5Qrcode('qr-reader');
+            await leitor.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: { width: 240, height: 240 } },
+                aoLerQr,
+                () => { /* frame sem QR: ignorar */ }
+            );
+            lendo = true;
+            if (retryBtn) retryBtn.style.display = 'none';
         } catch (e) {
-            return { ok: false, message: e.message };
+            console.error('New-Bit: não foi possível abrir a câmera', e);
+            lendo = false;
+            if (retryBtn) retryBtn.style.display = '';
+            mostrarFeedback(false, 'Não consegui abrir a câmera. Permita o acesso à câmera no navegador e toque em "Abrir câmera", ou use o campo manual.');
         }
     }
 
-    async function addFeedback({ nota, comentario }) {
-        await acao('nb_feedback', { p_nota: Number(nota), p_comentario: comentario || '' });
-        return true;
-    }
+    if (retryBtn) retryBtn.addEventListener('click', abrirCamera);
+    abrirCamera();
 
-    async function registrarPresenca(login) {
-        // Funciona com ou sem professor/admin logado no tablet.
-        const r = (await rpc('nb_presenca', { p_token: token(), p_login: login }, { semRedirecionar: true })) || {};
-        return { ok: !!r.ok, message: r.message || (r.ok ? 'Presença registrada.' : 'Não foi possível registrar.'), aluno: r.aluno, saldo: r.saldo };
-    }
-
-    // Botão "Sair" das páginas: encerra a sessão no servidor antes de voltar ao login.
-    document.addEventListener('click', (event) => {
-        const link = event.target.closest && event.target.closest('a[aria-label="Sair"]');
-        if (!link) return;
-        event.preventDefault();
-        logout().finally(() => { window.location.href = 'login.html'; });
+    // ---------- Campo manual (sem câmera) ----------
+    const inputManual = document.getElementById('manualLogin');
+    const botaoManual = document.getElementById('manualBtn');
+    botaoManual.addEventListener('click', () => {
+        const codigo = inputManual.value;
+        inputManual.value = '';
+        processarCodigo(codigo);
     });
+    inputManual.addEventListener('keydown', (e) => { if (e.key === 'Enter') botaoManual.click(); });
 
-    return {
-        TURMAS, esc, initials, formatDateTime,
-        getSession, setSession, clearSession, requireSession, init, refresh,
-        authenticate, logout,
-        getState, getAluno, getProfessor, getAlunosDaTurma, getSaldo, getExtrato, getRanking, limiteInfo,
-        addAluno, addProfessor, addProduto, excluirAluno, excluirProfessor, redefinirSenha,
-        darPontos, resgatarProduto, addFeedback, registrarPresenca
-    };
-})();
+});
